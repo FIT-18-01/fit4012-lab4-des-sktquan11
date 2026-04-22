@@ -2,6 +2,7 @@
 #include <string>
 #include <bitset>
 #include <vector>
+#include <algorithm>
 using namespace std;
 
 // Helper function: Covert decimal to 4-bit binary string
@@ -225,81 +226,122 @@ class DES {
         DES(const vector<string>& keys) : round_keys(keys) {}
     
         string encrypt(const string& input) {
-            // Apply initial permutation outside class
+            // 1. Hoán vị khởi tạo (IP)
             string perm = initial_permutation(input);
-    
-            // Split into left and right parts
+
+            // Chia khối thành hai nửa Trái (Left) và Phải (Right)
             string left = perm.substr(0, 32);
             string right = perm.substr(32, 32);
-    
-            // 16 Feistel rounds
+
+            // 2. Thực hiện 16 vòng Feistel
             for (int i = 0; i < 16; i++) {
-                // Expand right half to 48 bits
+                // Mở rộng nửa phải từ 32 bit lên 48 bit
                 string right_expanded = "";
                 for (int j = 0; j < 48; j++) {
                     right_expanded += right[expansion_table[j] - 1];
                 }
-    
-                // XOR with round key
+
+                // XOR với khóa vòng (Round Key)
                 string xored = Xor(round_keys[i], right_expanded);
-    
-                // S-box substitution
+
+                // Thay thế qua các S-box (8 boxes)
                 string res = "";
                 for (int j = 0; j < 8; j++) {
-                    string row1 = xored.substr(j * 6, 1) + xored.substr(j * 6 + 5, 1);
-                    int row = convert_binary_to_decimal(row1);
-    
-                    string col1 = xored.substr(j * 6 + 1, 4);
-                    int col = convert_binary_to_decimal(col1);
-    
+                    // Lấy bit đầu và bit cuối làm hàng (row)
+                    string row_str = string(1, xored[j * 6]) + xored[j * 6 + 5];
+                    int row = convert_binary_to_decimal(row_str);
+
+                    // Lấy 4 bit giữa làm cột (col)
+                    string col_str = xored.substr(j * 6 + 1, 4);
+                    int col = convert_binary_to_decimal(col_str);
+
                     int val = substition_boxes[j][row][col];
                     res += convert_decimal_to_binary(val);
                 }
-    
-                // Permutation after S-box
+
+                // Hoán vị sau bước S-box (P-box)
                 string perm2 = "";
                 for (int j = 0; j < 32; j++) {
                     perm2 += res[permutation_tab[j] - 1];
                 }
-    
-                // XOR permuted result with left, then swap
+
+                // XOR kết quả hoán vị với nửa trái, sau đó tráo đổi (Swap)
                 string new_right = Xor(perm2, left);
                 left = right;
                 right = new_right;
             }
-    
-            // Swap final halves
+
+            // 3. Kết hợp hai nửa (Lưu ý: Sau vòng 16 không swap nữa nên là Right + Left)
             string combined_text = right + left;
-    
-            // Apply inverse initial permutation outside class
-            string ciphertext = inverse_initial_permutation(combined_text);
-    
-            return ciphertext;
+
+            // 4. Hoán vị nghịch đảo (IP^-1) để ra bản mã cuối cùng
+            return inverse_initial_permutation(combined_text);
+        }
+        string decrypt(const string& ciphertext) {
+            vector<string> original_keys = round_keys;
+            reverse(round_keys.begin(), round_keys.end());
+            string plaintext = encrypt(ciphertext);
+            round_keys = original_keys; // Reset keys
+            return plaintext;
         }
 };
+
+// --- HÀM XỬ LÝ PADDING & MULTI-BLOCK ---
+string apply_padding(string plaintext) {
+    while (plaintext.length() % 64 != 0) {
+        plaintext += '0';
+    }
+    return plaintext;
+}
     
 // Main function
 int main() {
-    // Example plaintext (64 bits)
-    string plaintext = "0001001000110100010101100111100010011010101111001101111011110001";
-    
-    // Example key (64 bits)
-    string key = "0001001100110100010101110111100110011011101111001101111111110001";
-    
-    // Generate round keys
-    KeyGenerator keygen(key);
-    keygen.generateRoundKeys(); 
-    
-    vector<string> roundKeys = keygen.getRoundKeys();
-    
-    // Create DES object
-    DES des(roundKeys);
-    
-    // Encrypt
-    string ciphertext = des.encrypt(plaintext);
-    
-    cout << "Ciphertext: " << ciphertext << endl;
-    
+    int mode;
+    if (!(cin >> mode)) return 0;
+
+    string data, k1, k2, k3;
+
+    if (mode == 1 || mode == 2) { // DES
+        cin >> data >> k1;
+        KeyGenerator keygen(k1);
+        keygen.generateRoundKeys();
+        DES des(keygen.getRoundKeys());
+
+        if (mode == 1) { // DES Encrypt
+            data = apply_padding(data);
+            for (size_t i = 0; i < data.length(); i += 64) {
+                cout << des.encrypt(data.substr(i, 64));
+            }
+        }
+        else { // DES Decrypt
+            for (size_t i = 0; i < data.length(); i += 64) {
+                cout << des.decrypt(data.substr(i, 64));
+            }
+        }
+        cout << endl;
+    }
+    else if (mode == 3 || mode == 4) { // TripleDES
+        cin >> data >> k1 >> k2 >> k3;
+
+        KeyGenerator kg1(k1), kg2(k2), kg3(k3);
+        kg1.generateRoundKeys(); kg2.generateRoundKeys(); kg3.generateRoundKeys();
+
+        DES des1(kg1.getRoundKeys()), des2(kg2.getRoundKeys()), des3(kg3.getRoundKeys());
+
+        if (mode == 3) { // 3DES Encrypt: E(K3, D(K2, E(K1, P)))
+            string step1 = des1.encrypt(data);
+            string step2 = des2.decrypt(step1);
+            string step3 = des3.encrypt(step2);
+            cout << step3 << endl;
+        }
+        else { // 3DES Decrypt: D(K1, E(K2, D(K3, C)))
+            string step1 = des3.decrypt(data);
+            string step2 = des2.encrypt(step1);
+            string step3 = des1.decrypt(step2);
+            cout << step3 << endl;
+        }
+    }
+
     return 0;
 }
 
