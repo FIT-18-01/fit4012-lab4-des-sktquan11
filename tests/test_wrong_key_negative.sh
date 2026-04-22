@@ -1,17 +1,16 @@
-#!/usr/bin/env bash
-# Test kiểm tra giải mã với sai khóa (Incorrect Key Test)
+
 set -euo pipefail
 
-# Plaintext và Key đúng
+
 PT="0001001000110100010101100111100010011010101111001101111011110001"
 CORRECT_KEY="0001001100110100010101110111100110011011101111001101111111110001"
 
 echo "Running Wrong Key Negative Test..."
 
-# Bước 1: Mã hóa bằng khóa đúng
+
 CIPHER=$(echo -e "1\n$PT\n$CORRECT_KEY" | ./des | tail -n 1)
 
-# Bước 2: Tạo khóa sai (Đổi bit cuối cùng của khóa từ 1 thành 0 hoặc ngược lại)
+
 LAST_BIT_KEY=${CORRECT_KEY:63:1}
 if [ "$LAST_BIT_KEY" == "0" ]; then
     WRONG_KEY="${CORRECT_KEY:0:63}1"
@@ -19,10 +18,10 @@ else
     WRONG_KEY="${CORRECT_KEY:0:63}0"
 fi
 
-# Bước 3: Thử giải mã bằng KHÓA SAI
+
 WRONG_PT=$(echo -e "2\n$CIPHER\n$WRONG_KEY" | ./des | tail -n 1)
 
-# Bước 4: Kiểm tra. Kết quả giải mã phải KHÁC Plaintext gốc thì mới đạt yêu cầu
+
 if [ "$WRONG_PT" != "$PT" ]; then
     echo "Wrong Key Test: PASSED (Decryption failed with incorrect key as expected)"
     echo "Correct PT: $PT"

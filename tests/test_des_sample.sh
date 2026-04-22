@@ -1,14 +1,12 @@
-#!/usr/bin/env bash
-# Tự động test trường hợp DES mẫu
+
 set -euo pipefail
 
-# Plaintext và Key mẫu (64-bit)
+
 PT="0001001000110100010101100111100010011010101111001101111011110001"
 KEY="0001001100110100010101110111100110011011101111001101111111110001"
 EXPECTED="0111111010111110100010010010011010001111111101011111101011111000"
 
-# Chạy chương trình và lấy dòng kết quả cuối cùng
-# Dấu \n giúp giả lập việc bạn nhấn Enter trong terminal
+
 RESULT=$(echo -e "1\n$PT\n$KEY" | ./des | tail -n 1)
 
 if [ "$RESULT" == "$EXPECTED" ]; then

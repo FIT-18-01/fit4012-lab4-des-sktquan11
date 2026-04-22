@@ -57,8 +57,6 @@ cmake --build build
 
 ## 3. Input / Đầu vào
 
-TODO_STUDENT: Mô tả rõ đầu vào của chương trình sau khi em hoàn thiện bài lab.
-
 Gợi ý nên nêu:
 - plaintext đang được nhập như thế nào
 - key đang được nhập như thế nào
@@ -67,8 +65,6 @@ Gợi ý nên nêu:
 
 ## 4. Output / Đầu ra
 
-TODO_STUDENT: Mô tả rõ đầu ra của chương trình.
-
 Gợi ý nên nêu:
 - ciphertext hiển thị ra sao
 - có in round keys hay không
@@ -76,8 +72,6 @@ Gợi ý nên nêu:
 - với TripleDES thì đầu ra gồm những gì
 
 ## 5. Padding đang dùng
-
-TODO_STUDENT: Giải thích cơ chế padding em dùng.
 
 Gợi ý:
 - nếu plaintext dài hơn 64 bit thì chia block như thế nào
