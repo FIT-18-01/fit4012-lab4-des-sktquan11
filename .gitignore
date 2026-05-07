@@ -1,10 +1,13 @@
 # Build outputs
 des
+des.exe
+out/
 build/
 *.o
 *.out
 
 # IDE files
+.vs/
 .vscode/
 .idea/
 *.swp
